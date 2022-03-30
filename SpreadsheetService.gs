@@ -4,7 +4,7 @@ class SpreadsheetService{
     this.idSsReportYandex = "1SHnx9GkgMtgzUKQKXLVzXlyTF5JiAViCuYgiekwrO08"
     this.idSsReportGoogle = "1U1HYzgcQEg3Yls7zsJTCD829PFPnnnQRVqd_ueA-140"
     this.idSsReportGoogleAccounts = "1qSwCLsmE7LMf-a4GZKsCBJBLpFnzBlRs7gjMaEDUmSQ"
-    this.lengthRowMainReport = 15
+    this.lengthRowMainReport = 16
     this.matchingColYandex = {
       "Date":{
         colMainReport: "Дата",
@@ -157,15 +157,21 @@ class SpreadsheetService{
       let ss = SpreadsheetApp.openById(idSS)
       let ssName = ss.getName()
       let sheet = ss.getSheets()[0]
+
       for(let accountData of arrayAccountData){
         if(ssName !== accountData.clientLogin) continue;
         let data = accountData.content.split("\n");
         for(let row of data){
           let dataRow = row.split("	")
           if(dataRow.length <= 1) continue;
-          sheet.appendRow(dataRow)
-        }
+
+          let arrayForInsert = []
+          dataRow.forEach(value => {
+            arrayForInsert.push(value.match(/[.]|^(\d{1,})$/) ? value.replace(".", ",") : value)
+          })
         
+          sheet.appendRow(arrayForInsert)
+        }
       }
     }
   }
@@ -175,7 +181,7 @@ class SpreadsheetService{
    * @param (object) listIdsSs - Array ids spreadsheet every account report
    * @param (object) clientsObject - Object clients data from API Yandex Direct
    * @param (object) companyObject - Object companies data from API Yandex Direct
-   * @returns (object) data report without header
+   * @returns (Array[]) data report without header
   */
   generateReportYandex(listIdsSs, clientsObject, companyObject){
     let ssReportYandex = SpreadsheetApp.openById(this.idSsReportYandex)
@@ -214,14 +220,7 @@ class SpreadsheetService{
 
       let valuesData = sheetReportAccount.getRange(2,1,lastRow - 1, sheetReportAccount.getLastColumn()).getValues();
       for(let row of valuesData){
-        for(let col in row){
-          if(typeof row[col] === "string"){
-            let number = Number(row[col].replace(",", "."))
-            if(!isNaN(number)){
-              row[col] = number
-            }
-          }
-          
+        for(let col in row){         
           if(row[col] == "--"){
             row[col] = 0
           }
@@ -248,7 +247,7 @@ class SpreadsheetService{
 
   /**
    * Join report accounts google in one report
-   * @returns (object) data report without header
+   * @returns (Array[]) data report without header
   */
   generateReportGoogle(){
     let ssReportAccounts = SpreadsheetApp.openById(this.idSsReportGoogleAccounts)
@@ -278,9 +277,11 @@ class SpreadsheetService{
 
   /**
    * Generate report for analytics
-   * @param (object) dataYandexReport - data yandex report inserted to table during generation
-   * @param (object) dataGoogleReport - data google report inserted to table during generation
-   * @returns (void)
+   *
+   * @param {Array[]} dataYandexReport - data yandex report inserted to table during generation
+   * @param {Array[]} dataGoogleReport - data google report inserted to table during generation
+   * 
+   * @return {void}
    */
   generateMainReport(dataYandexReport, dataGoogleReport){
     let ssYandex = SpreadsheetApp.openById(this.idSsReportYandex)
@@ -330,26 +331,73 @@ class SpreadsheetService{
     if(lastRowYandexReport > 1){
       for(let row of dataYandexReport){
         let arrayToAdd = new Array(this.lengthRowMainReport)
+        let cost = row[this.matchingColYandex["Cost"].colIndexMainReport]
+        let impressions = row[this.matchingColYandex["Impressions"].colIndexMainReport]
+
+        if(typeof cost === 'string') {
+          cost = Number(cost.replace(",", "."))
+        }
+
+        if(typeof impressions === 'string') {
+          impressions = Number(impressions.replace(",", "."))
+        }
+
+        if(
+          cost === 0
+          &&
+          impressions === 0
+        ) continue;
+
         for(let colName in this.matchingColYandex){
             if(colName === "Source"){
               let indexMainReport = this.matchingColYandex[colName].colIndexMainReport
               arrayToAdd[indexMainReport] = "Яндекс Директ"
+
               continue;
             }
             let index = this.matchingColYandex[colName].colIndex
             let indexMainReport = this.matchingColYandex[colName].colIndexMainReport
             arrayToAdd[indexMainReport] = row[index]
         }
+
+        /** Доп. цели - ставим 0 если пусто */
+        if (arrayToAdd[11] === '' || !arrayToAdd[11]) {
+          arrayToAdd[11] = 0;
+        }
+        /** Кл. цели|Лиды - ставим 0 если пусто */
+        if (arrayToAdd[10] === '' || !arrayToAdd[10]) {
+          arrayToAdd[10] = 0;
+        }
+
+        arrayToAdd[14] = 0;
+        arrayToAdd[15] = 0;
+
         arrayToInsert.push(arrayToAdd)
       }
     }
-
 
     let lastRowGoogleReport = sheetGoogle.getLastRow()
     if(lastRowGoogleReport > 1){
       
       for(let row of dataGoogleReport){
         let arrayToAdd = new Array(this.lengthRowMainReport)
+        let cost = row[this.matchingColGoogle["Cost"].colIndexMainReport]
+        let impressions = row[this.matchingColGoogle["Impressions"].colIndexMainReport]
+        
+        if(typeof cost === 'string') {
+          cost = Number(cost.replace(",", "."))
+        }
+
+        if(typeof impressions === 'string') {
+          impressions = Number(impressions.replace(",", "."))
+        }
+
+        if(
+          cost === 0
+          &&
+          impressions === 0
+        ) continue;
+
         for(let colName in this.matchingColGoogle){
 
             if(colName === "Clicks"){
@@ -403,6 +451,22 @@ class SpreadsheetService{
             let indexMainReport = this.matchingColGoogle[colName].colIndexMainReport
             arrayToAdd[indexMainReport] = row[index]
         }
+
+        /** Доп. цели - ставим 0 если пусто */
+        if (arrayToAdd[11] === '' || !arrayToAdd[11]) {
+          arrayToAdd[11] = 0;
+        }
+        /** Кл. цели|Лиды - ставим 0 если пусто */
+        if (arrayToAdd[10] === '' || !arrayToAdd[10]) {
+          arrayToAdd[10] = 0;
+        }
+
+        arrayToAdd[14] = 0;
+        arrayToAdd[15] = 0;
+
+        arrayToAdd[14] = 0;
+        arrayToAdd[15] = 0;
+
         arrayToInsert.push(arrayToAdd)
       }
     }

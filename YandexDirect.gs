@@ -86,7 +86,7 @@ class YandexDirect{
           for(let compaign of result){
             if(compaign.State === "ARCHIVED") continue;
             if(compaign.DailyBudget){
-              compaign.DailyBudget.Amount = compaign.DailyBudget.Amount/1000000
+              compaign.DailyBudget.Amount = (compaign.DailyBudget.Amount/1000000).toFixed(2).replace('.', ',')
             }
             objectOutput[compaign.Id] = compaign
           }
@@ -128,7 +128,7 @@ class YandexDirect{
     let result = JSON.parse(response.getContentText()).data.Accounts
 
     for(let account of result){
-      objectClients[account.Login].Amount = Number(account.Amount)
+      objectClients[account.Login].Amount = Number(account.Amount).toFixed(2).replace('.', ',')
     }
 
     return objectClients
@@ -181,7 +181,7 @@ class YandexDirect{
         IncludeVAT:"NO"
       }
     }
-    /*LAST_7_DAYS*/
+    /*"YESTERDAY"LAST_7_DAYS LAST_3_DAYS*/
     let option = {
         method:"POST",
         headers:{

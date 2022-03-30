@@ -1,14 +1,21 @@
 {
   "timeZone": "Europe/Moscow",
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8",
   "dependencies": {
     "enabledAdvancedServices": [
       {
         "userSymbol": "Drive",
-        "version": "v2",
-        "serviceId": "drive"
+        "serviceId": "drive",
+        "version": "v2"
+      }
+    ],
+    "libraries": [
+      {
+        "userSymbol": "Telegram",
+        "libraryId": "1h7cr3ol3O3ubXYcm3ceX4s1xwANHfuJR1rNybpkUjoZlmbG9KZNnvJqQ",
+        "version": "7"
       }
     ]
-  },
-  "exceptionLogging": "STACKDRIVER",
-  "runtimeVersion": "V8"
+  }
 }
